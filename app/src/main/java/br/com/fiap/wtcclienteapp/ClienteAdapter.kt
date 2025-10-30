@@ -1,5 +1,6 @@
 package br.com.fiap.wtcclienteapp
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -33,6 +34,13 @@ class ClienteAdapter(private var items: List<Cliente>) : RecyclerView.Adapter<Cl
         holder.itemView.setOnLongClickListener {
             QuickNoteDialog.newInstance(item.id.toString()).show((holder.itemView.context as androidx.appcompat.app.AppCompatActivity).supportFragmentManager, "note")
             true
+        }
+        holder.itemView.setOnClickListener {
+            val ctx = holder.itemView.context
+            ctx.startActivity(Intent(ctx, ChatActivity::class.java).apply {
+                putExtra(ChatActivity.EXTRA_PEER_ID, item.id.toString())
+                putExtra(ChatActivity.EXTRA_PEER_NAME, item.nome)
+            })
         }
     }
 

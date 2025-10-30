@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import android.content.Intent
 
 // Mock de classes/funções do Firebase para satisfazer o requisito de conectividade
 // Em um aplicativo real, isso seria substituído por dependências e inicializações reais.
@@ -222,6 +223,17 @@ fun WTCClientApp() {
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            val context = LocalContext.current
+            FloatingActionButton(onClick = {
+                context.startActivity(Intent(context, ChatActivity::class.java).apply {
+                    putExtra(ChatActivity.EXTRA_PEER_ID, "operator")
+                    putExtra(ChatActivity.EXTRA_PEER_NAME, "Atendente")
+                })
+            }) {
+                Icon(Icons.Filled.AccountCircle, contentDescription = "Chat 1:1")
+            }
         },
         content = { paddingValues ->
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
