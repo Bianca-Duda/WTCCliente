@@ -26,10 +26,8 @@ class ClienteListFragment : Fragment() {
         val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerClientes)
         val btnFiltrar = view.findViewById<Button>(R.id.btnFiltrar)
         val btnLimpar = view.findViewById<Button>(R.id.btnLimpar)
-        val btnCampanha = Button(requireContext()).apply {
-            text = "Campanha Express"
-            setOnClickListener { CampanhaExpressDialog().show(parentFragmentManager, "campanha") }
-        }
+        val btnCriarGrupo = view.findViewById<Button>(R.id.btnCriarGrupo)
+        val btnMeusGrupos = view.findViewById<Button>(R.id.btnMeusGrupos)
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         adapter = ClienteAdapter(emptyList())
@@ -51,6 +49,26 @@ class ClienteListFragment : Fragment() {
             view.findViewById<EditText>(R.id.inputScore).setText("")
             view.findViewById<EditText>(R.id.inputStatus).setText("")
             viewModel.filtrarClientes(Filtros())
+        }
+
+        btnCriarGrupo.setOnClickListener {
+            CreateGroupDialog().show(parentFragmentManager, "create_group")
+        }
+
+        btnMeusGrupos.setOnClickListener {
+            val groups = GroupStore.listGroups()
+            if (groups.isEmpty()) return@setOnClickListener
+            val names = groups.map { it.name }.toTypedArray()
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Grupos")
+                .setItems(names) { _, which ->
+                    val g = groups[which]
+                    startActivity(android.content.Intent(requireContext(), GroupChatActivity::class.java).apply {
+                        putExtra(GroupChatActivity.EXTRA_GROUP_ID, g.id)
+                        putExtra(GroupChatActivity.EXTRA_GROUP_NAME, g.name)
+                    })
+                }
+                .show()
         }
 
         // Carrega inicial

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi // IMPORT ADICIONADO para FlowRow
 import androidx.compose.foundation.layout.FlowRow // IMPORT ADICIONADO para FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState // IMPORT ADICIONADO
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.content.Intent
+import androidx.compose.foundation.BorderStroke
 
 // Mock de classes/funções do Firebase para satisfazer o requisito de conectividade
 // Em um aplicativo real, isso seria substituído por dependências e inicializações reais.
@@ -95,9 +97,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FirebaseMock.initialize() // Inicialização mockada
+        val clientId = intent.getStringExtra("client_id")
+        val clientName = intent.getStringExtra("client_name")
         setContent {
             WTCAppTheme {
-                WTCClientApp()
+                WTCClientApp(clientId = clientId, clientName = clientName)
             }
         }
     }
@@ -128,7 +132,7 @@ fun WTCAppTheme(content: @Composable () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class) // Adicionado para TopAppBar
 @Composable
-fun WTCClientApp() {
+fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
     val initialMessages = remember {
         mutableStateListOf(
             Message(
@@ -163,6 +167,8 @@ fun WTCClientApp() {
 
     // State para simular a nova mensagem (Push Notification)
     var showPopup by remember { mutableStateOf(false) }
+    // State para mostrar lista de grupos
+    var showGroupsList by remember { mutableStateOf(false) }
 
     // Mock de escuta de mensagens em tempo real e simulação
     LaunchedEffect(Unit) {
@@ -215,6 +221,11 @@ fun WTCClientApp() {
                 title = { Text("WTC Mensagens", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary, titleContentColor = MaterialTheme.colorScheme.onPrimary),
                 actions = {
+                    if (clientId != null || clientName != null) {
+                        IconButton(onClick = { showGroupsList = true }) {
+                            Icon(Icons.Filled.AccountCircle, contentDescription = "Meus Grupos", tint = MaterialTheme.colorScheme.onPrimary)
+                        }
+                    }
                     IconButton(onClick = { /* Ação de busca */ }) {
                         Icon(Icons.Filled.Search, contentDescription = "Buscar", tint = MaterialTheme.colorScheme.onPrimary)
                     }
@@ -237,6 +248,15 @@ fun WTCClientApp() {
         },
         content = { paddingValues ->
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                if (clientId != null || clientName != null) {
+                    GroupsBox(memberKey = clientId ?: clientName ?: "")
+                    if (showGroupsList) {
+                        GroupsListDialog(
+                            memberKey = clientId ?: clientName ?: "",
+                            onDismiss = { showGroupsList = false }
+                        )
+                    }
+                }
                 MessageList(initialMessages)
 
                 // Popup de notificação in-app (push simulado)
@@ -332,6 +352,94 @@ fun MessageList(messages: MutableList<Message>) {
             }
         }
     }
+}
+
+@Composable
+fun GroupsBox(memberKey: String) {
+    val groups = remember { mutableStateListOf<Group>() }
+    val context = LocalContext.current
+    LaunchedEffect(memberKey) {
+        groups.clear()
+        groups.addAll(GroupStore.groupsForMember(memberKey))
+    }
+    if (groups.isEmpty()) return
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text("Grupos que você está participando", fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            groups.forEach { g ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            context.startActivity(Intent(context, GroupChatActivity::class.java).apply {
+                                putExtra(GroupChatActivity.EXTRA_GROUP_ID, g.id)
+                                putExtra(GroupChatActivity.EXTRA_GROUP_NAME, g.name)
+                            })
+                        }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.AccountCircle, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(g.name)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GroupsListDialog(memberKey: String, onDismiss: () -> Unit) {
+    val groups = remember { mutableStateListOf<Group>() }
+    val context = LocalContext.current
+    LaunchedEffect(memberKey) {
+        groups.clear()
+        groups.addAll(GroupStore.groupsForMember(memberKey))
+    }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Meus Grupos") },
+        text = {
+            if (groups.isEmpty()) {
+                Text("Você não está participando de nenhum grupo.")
+            } else {
+                LazyColumn {
+                    items(groups) { g ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    context.startActivity(Intent(context, GroupChatActivity::class.java).apply {
+                                        putExtra(GroupChatActivity.EXTRA_GROUP_ID, g.id)
+                                        putExtra(GroupChatActivity.EXTRA_GROUP_NAME, g.name)
+                                    })
+                                    onDismiss()
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Filled.AccountCircle, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(g.name, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Fechar")
+            }
+        }
+    )
 }
 
 // --- Renderização de Mensagem Rica (Individual) ---

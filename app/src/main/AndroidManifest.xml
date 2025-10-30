@@ -42,6 +42,12 @@
             android:label="Chat"
             android:theme="@style/Theme.WTCClienteApp" />
 
+        <activity
+            android:name=".GroupChatActivity"
+            android:exported="false"
+            android:label="Grupo"
+            android:theme="@style/Theme.WTCClienteApp" />
+
     </application>
 
 </manifest>

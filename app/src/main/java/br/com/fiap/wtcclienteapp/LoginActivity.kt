@@ -47,7 +47,10 @@ class LoginActivity : AppCompatActivity() {
             val cpf = findViewById<EditText>(R.id.inputCpfCliente).text.toString()
             val senha = findViewById<EditText>(R.id.inputSenhaCliente).text.toString()
             // TODO: validar/autenticar
-            startActivity(Intent(this, MainActivity::class.java))
+            startActivity(Intent(this, MainActivity::class.java).apply {
+                putExtra("client_id", cpf)
+                putExtra("client_name", cpf)
+            })
             finish()
         }
     }

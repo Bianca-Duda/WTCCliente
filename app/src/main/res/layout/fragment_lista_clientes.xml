@@ -45,6 +45,27 @@
             android:text="Filtrar" />
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:paddingTop="8dp">
+
+        <Button
+            android:id="@+id/btnMeusGrupos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Meus Grupos"
+            android:layout_marginEnd="12dp" />
+
+        <Button
+            android:id="@+id/btnCriarGrupo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Criar Grupo" />
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerClientes"
         android:layout_width="match_parent"
