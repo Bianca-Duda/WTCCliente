@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 class ClienteListFragment : Fragment() {
     private lateinit var viewModel: ClienteViewModel
     private lateinit var adapter: ClienteAdapter
+    private var currentClientes: List<br.com.fiap.wtcclienteapp.model.Cliente> = emptyList()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return inflater.inflate(R.layout.fragment_lista_clientes, container, false)
@@ -27,6 +28,7 @@ class ClienteListFragment : Fragment() {
         val btnFiltrar = view.findViewById<Button>(R.id.btnFiltrar)
         val btnLimpar = view.findViewById<Button>(R.id.btnLimpar)
         val btnCriarGrupo = view.findViewById<Button>(R.id.btnCriarGrupo)
+        val btnCriarAviso = view.findViewById<Button>(R.id.btnCriarAviso)
         val btnMeusGrupos = view.findViewById<Button>(R.id.btnMeusGrupos)
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -34,6 +36,7 @@ class ClienteListFragment : Fragment() {
         recyclerView.adapter = adapter
 
         viewModel.clientes.observe(viewLifecycleOwner) { lista ->
+            currentClientes = lista
             adapter.submit(lista)
         }
 
@@ -69,6 +72,16 @@ class ClienteListFragment : Fragment() {
                     })
                 }
                 .show()
+        }
+
+        btnCriarAviso.setOnClickListener {
+            val clientIds = currentClientes.map { it.id.toString() }
+            val clientNames = currentClientes.map { it.nome }
+            val groups = GroupStore.listGroups()
+            val groupIds = groups.map { it.id }
+            val groupNames = groups.map { it.name }
+            CreateNoticeDialog.newInstance(clientIds, clientNames, groupIds, groupNames)
+                .show(parentFragmentManager, "create_notice")
         }
 
         // Carrega inicial

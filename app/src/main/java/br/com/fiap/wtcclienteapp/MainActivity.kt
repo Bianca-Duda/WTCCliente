@@ -169,6 +169,7 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
     var showPopup by remember { mutableStateOf(false) }
     // State para mostrar lista de grupos
     var showGroupsList by remember { mutableStateOf(false) }
+    val memberKey = remember(clientId, clientName) { clientId ?: clientName ?: "" }
 
     // Mock de escuta de mensagens em tempo real e simulação
     LaunchedEffect(Unit) {
@@ -195,6 +196,33 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
         showPopup = true
         delay(4000)
         showPopup = false
+    }
+
+    // Recebe Avisos criados pelo colaborador e exibe para o cliente alvo (por ID direto ou por grupos)
+    LaunchedEffect(memberKey) {
+        if (memberKey.isBlank()) return@LaunchedEffect
+        NoticeBus.events.collect { notice ->
+            val groupsForMember = GroupStore.groupsForMember(memberKey)
+            val memberGroupIds = groupsForMember.map { it.id }.toSet()
+            val isDirectRecipient = notice.recipientClientIds.contains(memberKey)
+            val isGroupRecipient = notice.recipientGroupIds.any { it in memberGroupIds }
+            if (isDirectRecipient || isGroupRecipient) {
+                val composed = buildString {
+                    appendLine(notice.title)
+                    append(notice.content)
+                    notice.date?.let { d -> append("\n\nData: ").append(d) }
+                }
+                val msg = Message(
+                    id = System.currentTimeMillis().toString(),
+                    sender = "Aviso",
+                    content = composed,
+                    type = MessageType.SYSTEM,
+                    isRead = false
+                )
+                initialMessages.add(0, msg)
+                showPopup = true
+            }
+        }
     }
 
     // Recebe Campanha Express do operador e insere no chat + popup
@@ -249,10 +277,10 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
         content = { paddingValues ->
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                 if (clientId != null || clientName != null) {
-                    GroupsBox(memberKey = clientId ?: clientName ?: "")
+                    GroupsBox(memberKey = memberKey)
                     if (showGroupsList) {
                         GroupsListDialog(
-                            memberKey = clientId ?: clientName ?: "",
+                            memberKey = memberKey,
                             onDismiss = { showGroupsList = false }
                         )
                     }

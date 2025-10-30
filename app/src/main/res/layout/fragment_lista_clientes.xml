@@ -64,6 +64,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Criar Grupo" />
+
+        <Button
+            android:id="@+id/btnCriarAviso"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Criar Aviso"
+            android:layout_marginStart="12dp" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
