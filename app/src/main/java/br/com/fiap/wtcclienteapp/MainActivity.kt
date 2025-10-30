@@ -33,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // Mock de classes/funções do Firebase para satisfazer o requisito de conectividade
 // Em um aplicativo real, isso seria substituído por dependências e inicializações reais.
@@ -189,6 +190,24 @@ fun WTCClientApp() {
         showPopup = false
     }
 
+    // Recebe Campanha Express do operador e insere no chat + popup
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        scope.launch {
+            CampaignBus.events.collect { campaign ->
+                val msg = Message(
+                    id = System.currentTimeMillis().toString(),
+                    sender = "Campanha",
+                    content = campaign.title + ": " + campaign.content,
+                    type = MessageType.CAMPAIGN,
+                    isRead = false
+                )
+                initialMessages.add(0, msg)
+                showPopup = true
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -334,7 +353,7 @@ fun RichMessageCard(message: Message) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (!message.isRead) {
                         // FiberManualRecord foi corrigido com o import Icons.Filled.*
-                        Icon(Icons.Filled.FiberManualRecord, contentDescription = "Não Lido", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(10.dp))
+                        Icon(Icons.Filled.Close, contentDescription = "Não Lido", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(10.dp))
                         Spacer(Modifier.width(4.dp))
                     }
                     Text(
@@ -377,8 +396,8 @@ fun RichMessageCard(message: Message) {
                 // FlowRow corrigido com @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    mainAxisSpacing = 8.dp,
-                    crossAxisSpacing = 8.dp
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     message.actions.filter { it.type == ActionType.BUTTON_LINK || it.type == ActionType.BUTTON_COMMAND }
                         .forEach { action ->
@@ -430,7 +449,7 @@ fun InAppNotification(message: Message) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                Icons.Filled.Message,
+                Icons.Filled.MailOutline,
                 contentDescription = "Nova Mensagem",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Tabs simples com botões -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:paddingBottom="8dp">
+
+        <Button
+            android:id="@+id/btnTabCliente"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Cliente" />
+
+        <Button
+            android:id="@+id/btnTabColaborador"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Colaborador" />
+    </LinearLayout>
+
+    <!-- Form Cliente -->
+    <LinearLayout
+        android:id="@+id/formCliente"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:paddingTop="8dp">
+
+        <EditText
+            android:id="@+id/inputCpfCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="CPF"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/inputSenhaCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Senha"
+            android:inputType="textPassword" />
+
+        <Button
+            android:id="@+id/btnEntrarCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Entrar como Cliente" />
+    </LinearLayout>
+
+    <!-- Form Colaborador -->
+    <LinearLayout
+        android:id="@+id/formColaborador"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:paddingTop="8dp">
+
+        <EditText
+            android:id="@+id/inputEmailColab"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="E-mail corporativo"
+            android:inputType="textEmailAddress" />
+
+        <EditText
+            android:id="@+id/inputSenhaColab"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Senha"
+            android:inputType="textPassword" />
+
+        <Button
+            android:id="@+id/btnEntrarColaborador"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Entrar como Colaborador" />
+    </LinearLayout>
+
+</LinearLayout>
+
+
