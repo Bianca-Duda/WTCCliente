@@ -12,11 +12,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.ExperimentalLayoutApi // IMPORT ADICIONADO para FlowRow
-import androidx.compose.foundation.layout.FlowRow // IMPORT ADICIONADO para FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState // IMPORT ADICIONADO
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -52,6 +52,17 @@ object FirebaseMock {
     fun registerForPushNotifications(token: String) {
         Log.d("WTCApp", "Token FCM registrado: $token")
     }
+
+    // Simula o envio da mensagem do usuário para o backend
+    fun sendMessageToBackend(message: Message) {
+        Log.i("WTCApp", "MENSAGEM DO USUÁRIO ENVIADA: ${message.content}")
+        // Em um app real: Aqui faria uma chamada para a API do CRM ou Firestore
+    }
+
+    // Simula o registro de interação (Ex: Curtida)
+    fun logInteraction(messageId: String, interaction: String) {
+        Log.i("WTCApp", "INTERAÇÃO: Mensagem $messageId -> $interaction")
+    }
 }
 
 // --- Data Models ---
@@ -78,13 +89,22 @@ data class Message(
     val type: MessageType,
     val actions: List<Action> = emptyList(),
     val isImportant: Boolean = false,
-    val isRead: Boolean = true
+    val isRead: Boolean = true,
+    // NOVOS CAMPOS PARA INTERAÇÃO EM POSTS
+    val isLiked: Boolean = false, // Se o usuário deu "Gostei"
+    val likeCount: Int = 0        // Contador de "Gostei" (simulado)
 )
+
+enum class SenderType {
+    CLIENT, // Mensagem enviada pelo usuário (você)
+    AGENT,  // Mensagem enviada pelo sistema (WTC, CRM, Marketing)
+}
 
 enum class MessageType {
     TEXT,
-    CAMPAIGN, // Mensagem rica (promoção, banner, evento)
-    SYSTEM    // Mensagens automáticas do sistema
+    CAMPAIGN, // Mensagem rica (promoção, banner, evento) - Agora com interação
+    SYSTEM,   // Mensagens automáticas do sistema
+    USER_MESSAGE // Mensagens de texto simples do usuário
 }
 
 // --- Main Activity ---
@@ -110,7 +130,11 @@ fun WTCAppTheme(content: @Composable () -> Unit) {
             primary = Color(0xFF005691), // Azul WTC
             onPrimary = Color.White,
             surface = Color(0xFFF0F4F8), // Fundo claro
-            onSurface = Color(0xFF1E293B)
+            onSurface = Color(0xFF1E293B),
+            // Cor secundária usada para balões de chat do usuário
+            secondaryContainer = Color(0xFFD9E9FF), // Azul claro para balão do cliente
+            onSecondaryContainer = Color(0xFF001F3F),
+            error = Color(0xFFD9183B) // Vermelho forte para erro/alerta
         ),
         shapes = Shapes(
             extraSmall = RoundedCornerShape(4.dp),
@@ -124,16 +148,27 @@ fun WTCAppTheme(content: @Composable () -> Unit) {
 
 // --- Application Composable ---
 
-@OptIn(ExperimentalMaterial3Api::class) // Adicionado para TopAppBar
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WTCClientApp() {
+    // Simulação de dados de perfil do usuário (Personalização/Integrações)
+    data class UserProfile(val id: String, val tier: String, val segment: String)
+    val userProfile = remember { UserProfile("CLIENTE_42", "Platinum", "Tech Enthusiast") }
+
+    val currentUserId = userProfile.id
+    val agentId = "CRM WTC"
+
     val initialMessages = remember {
         mutableStateListOf(
             Message(
-                id = "1",
-                sender = "CRM WTC",
-                content = "Olá, [Nome do Cliente]! Seja bem-vindo à nossa nova experiência de comunicação. Recebemos seu pedido #4590. Use o comando /suporte para falar com um agente.",
-                type = MessageType.SYSTEM
+                id = "3",
+                sender = agentId,
+                content = "Seu boleto de Outubro já está disponível. Acesse o link para pagamento imediato: [Deeplink Boleto]",
+                type = MessageType.TEXT,
+                actions = listOf(
+                    Action("[Deeplink Boleto]", ActionType.DEEPLINK_TEXT, "wtcapp://fatura/outubro")
+                ),
+                isRead = false
             ),
             Message(
                 id = "2",
@@ -144,17 +179,15 @@ fun WTCClientApp() {
                     Action("Ver Termos", ActionType.BUTTON_LINK, "https://wtc.com/terms"),
                     Action("Ativar Agora", ActionType.BUTTON_COMMAND, "/ativar_premium")
                 ),
-                isRead = false // Mensagem não lida
+                isRead = false, // Mensagem não lida
+                likeCount = 15 // Inicialização com likes
             ),
             Message(
-                id = "3",
-                sender = "CRM WTC",
-                content = "Seu boleto de Outubro já está disponível. Acesse o link para pagamento imediato: [Deeplink Boleto]",
-                type = MessageType.TEXT,
-                actions = listOf(
-                    Action("[Deeplink Boleto]", ActionType.DEEPLINK_TEXT, "wtcapp://fatura/outubro")
-                ),
-                isRead = false
+                id = "1",
+                sender = agentId,
+                // Mensagem personalizada baseada no perfil
+                content = "Olá, [Nome do Cliente]! Seja bem-vindo à nossa nova experiência de comunicação. Como cliente **${userProfile.tier}**, você receberá ofertas exclusivas. Recebemos seu pedido #4590. Use o comando /suporte para falar com um agente.",
+                type = MessageType.SYSTEM
             )
         )
     }
@@ -162,12 +195,48 @@ fun WTCClientApp() {
     // State para simular a nova mensagem (Push Notification)
     var showPopup by remember { mutableStateOf(false) }
 
+    // Função que será passada para o InputBar para enviar mensagens
+    val onMessageSent: (String) -> Unit = { text ->
+        if (text.isNotBlank()) {
+            val newMessage = Message(
+                id = java.util.UUID.randomUUID().toString(),
+                sender = currentUserId,
+                content = text.trim(),
+                type = MessageType.USER_MESSAGE
+            )
+            initialMessages.add(0, newMessage)
+            FirebaseMock.sendMessageToBackend(newMessage)
+        }
+    }
+
+    // NOVA FUNÇÃO: Manipula o evento de "Curtir" em uma mensagem
+    val onMessageLiked: (String) -> Unit = { messageId ->
+        val index = initialMessages.indexOfFirst { it.id == messageId }
+        if (index != -1) {
+            val oldMessage = initialMessages[index]
+            val newIsLiked = !oldMessage.isLiked
+            val newLikeCount = if (newIsLiked) oldMessage.likeCount + 1 else oldMessage.likeCount - 1
+
+            // Cria uma nova mensagem com o estado atualizado (imutabilidade)
+            val updatedMessage = oldMessage.copy(
+                isLiked = newIsLiked,
+                likeCount = newLikeCount
+            )
+
+            // Substitui a mensagem antiga pela nova na lista mutável
+            initialMessages[index] = updatedMessage
+
+            // Simula log de interação para o backend
+            val interaction = if(newIsLiked) "CURTIDA" else "DESCURTIDA"
+            FirebaseMock.logInteraction(messageId, interaction)
+        }
+    }
+
+
     // Mock de escuta de mensagens em tempo real e simulação
     LaunchedEffect(Unit) {
         FirebaseMock.setupRealtimeListener { newMessage ->
-            // Adiciona a nova mensagem ao topo
             initialMessages.add(0, newMessage)
-            // Mostra o pop-up
             showPopup = true
         }
 
@@ -181,7 +250,8 @@ fun WTCClientApp() {
             actions = listOf(
                 Action("Confirmar", ActionType.BUTTON_COMMAND, "/confirmar_evento_sp")
             ),
-            isRead = false
+            isRead = false,
+            likeCount = 3
         )
         initialMessages.add(0, newMsg)
         showPopup = true
@@ -204,9 +274,13 @@ fun WTCClientApp() {
                 }
             )
         },
+        bottomBar = {
+            InputBar(onMessageSent = onMessageSent)
+        },
         content = { paddingValues ->
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                MessageList(initialMessages)
+                // Passa a função de like para a lista de mensagens
+                MessageList(initialMessages, currentUserId, onMessageLiked)
 
                 // Popup de notificação in-app (push simulado)
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -215,17 +289,20 @@ fun WTCClientApp() {
                         enter = fadeIn(animationSpec = tween(500)),
                         exit = fadeOut(animationSpec = tween(500))
                     ) {
-                        InAppNotification(message = initialMessages.first())
+                        // Verifica se initialMessages não está vazia antes de acessar o primeiro elemento
+                        if (initialMessages.isNotEmpty()) {
+                            InAppNotification(message = initialMessages.first())
+                        }
                     }
                 }
 
                 // Indicador de mensagens não lidas
-                val unreadCount = initialMessages.count { !it.isRead }
+                val unreadCount = initialMessages.count { !it.isRead && it.sender != currentUserId }
                 if (unreadCount > 0) {
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = 16.dp)
+                            .padding(bottom = 60.dp) // Ajustado para não colidir com o InputBar
                             .clip(RoundedCornerShape(20.dp))
                             .background(MaterialTheme.colorScheme.error)
                             .clickable {
@@ -247,11 +324,13 @@ fun WTCClientApp() {
 // --- Listagem do Histórico de Chat ---
 
 @Composable
-fun MessageList(messages: MutableList<Message>) {
-    // Para obter o LazyListState e controlar a rolagem
-    val listState = rememberLazyListState() // Correção do Unresolved reference
+fun MessageList(
+    messages: MutableList<Message>,
+    currentUserId: String,
+    onMessageLiked: (String) -> Unit // NOVO PARÂMETRO
+) {
+    val listState = rememberLazyListState()
 
-    // Efeito para rolar até a nova mensagem quando o total de itens mudar
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(0) // Rola para o topo (a mensagem mais nova)
@@ -263,9 +342,9 @@ fun MessageList(messages: MutableList<Message>) {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 8.dp),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp),
-        reverseLayout = true, // Para simular um chat (mensagens novas no topo, mas rola para baixo)
-        state = listState // Aplica o estado à LazyColumn
+        contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp),
+        reverseLayout = true,
+        state = listState
     ) {
         itemsIndexed(messages, key = { _, msg -> msg.id }) { index, message ->
             // Lógica de Gestos Inteligentes (Long Press para criar Tarefa)
@@ -276,16 +355,17 @@ fun MessageList(messages: MutableList<Message>) {
                     .pointerInput(message.id) {
                         detectTapGestures(
                             onLongPress = {
-                                // Ex: Mostrar menu contextual para criar tarefa
                                 Log.d("WTCApp", "Tarefa rápida criada para a mensagem (Long Press): ${message.id}")
                             }
                         )
-                    }
+                    },
+                horizontalArrangement = if (message.sender == currentUserId) Arrangement.End else Arrangement.Start
             ) {
                 // Conteúdo da mensagem
-                RichMessageCard(message)
+                // Passa a função de like para o card
+                RichMessageCard(message, currentUserId, onLikeClicked = onMessageLiked)
 
-                // Área para mostrar ação de importante (se o status isImportant for true)
+                // Área para mostrar ação de importante
                 if (message.isImportant) {
                     Icon(
                         Icons.Filled.Star,
@@ -295,63 +375,142 @@ fun MessageList(messages: MutableList<Message>) {
                     )
                 }
             }
-            // Separador (se não for a última mensagem)
-            if (index < messages.size - 1) {
+            // Separador (somente para mensagens que não são de chat em balão)
+            if (message.type != MessageType.USER_MESSAGE && message.type != MessageType.TEXT && index < messages.size - 1) {
                 Divider(color = Color(0xFFE2E8F0), thickness = 0.5.dp, modifier = Modifier.padding(vertical = 4.dp))
             }
         }
     }
 }
 
+// --- Novo: Barra de Entrada de Texto ---
+@Composable
+fun InputBar(onMessageSent: (String) -> Unit) {
+    var text by remember { mutableStateOf("") }
+
+    Surface(
+        shadowElevation = 4.dp,
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Campo de entrada de texto
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("Digite sua mensagem...") },
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
+                shape = RoundedCornerShape(24.dp),
+                trailingIcon = {
+                    // Ícone de anexar ou emoji (opcional)
+                    Icon(Icons.Filled.AttachFile, contentDescription = "Anexar", tint = Color.Gray)
+                },
+                singleLine = true
+            )
+
+            // Botão de Enviar
+            Button(
+                onClick = {
+                    onMessageSent(text)
+                    text = "" // Limpa o campo após o envio
+                },
+                enabled = text.isNotBlank(), // Só habilita se houver texto
+                shape = RoundedCornerShape(24.dp),
+                contentPadding = PaddingValues(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(Icons.Filled.Send, contentDescription = "Enviar", modifier = Modifier.size(24.dp))
+            }
+        }
+    }
+}
+
+
 // --- Renderização de Mensagem Rica (Individual) ---
 
-@OptIn(ExperimentalLayoutApi::class) // Adicionado para FlowRow com mainAxisSpacing/crossAxisSpacing
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun RichMessageCard(message: Message) {
+fun RichMessageCard(
+    message: Message,
+    currentUserId: String,
+    onLikeClicked: (String) -> Unit // NOVO PARÂMETRO PARA INTERAÇÃO
+) {
     val context = LocalContext.current
 
+    val senderType = if (message.sender == currentUserId) SenderType.CLIENT else SenderType.AGENT
+    val isUserMessage = senderType == SenderType.CLIENT && message.type == MessageType.USER_MESSAGE
+
     val backgroundColor = when {
-        message.type == MessageType.CAMPAIGN -> Color(0xFFE5F6FF) // Azul claro para Campanhas
-        message.type == MessageType.SYSTEM -> Color(0xFFFFFBE5) // Amarelo claro para Sistema
+        isUserMessage -> MaterialTheme.colorScheme.secondaryContainer
+        message.type == MessageType.CAMPAIGN -> Color(0xFFE5F6FF)
+        message.type == MessageType.SYSTEM -> Color(0xFFFFFBE5)
         else -> Color.White
     }
 
+    val contentColor = if (isUserMessage) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+
+    val cardShape = when (senderType) {
+        SenderType.CLIENT -> RoundedCornerShape(16.dp, 4.dp, 16.dp, 16.dp)
+        SenderType.AGENT -> RoundedCornerShape(4.dp, 16.dp, 16.dp, 16.dp)
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier
+            .widthIn(max = 300.dp)
+            .then(if (isUserMessage) Modifier else Modifier.fillMaxWidth()),
+        shape = if (isUserMessage) cardShape else MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             // Cabeçalho (Remetente e Data)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = message.sender,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (!message.isRead) {
-                        // FiberManualRecord foi corrigido com o import Icons.Filled.*
-                        Icon(Icons.Filled.FiberManualRecord, contentDescription = "Não Lido", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(10.dp))
-                        Spacer(Modifier.width(4.dp))
-                    }
+            if (!isUserMessage) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(
-                        text = "Hoje, ${java.text.SimpleDateFormat("HH:mm").format(message.timestamp)}",
-                        fontSize = 12.sp,
+                        text = message.sender,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (!message.isRead) {
+                            Icon(Icons.Filled.FiberManualRecord, contentDescription = "Não Lido", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(10.dp))
+                            Spacer(Modifier.width(4.dp))
+                        }
+                        Text(
+                            text = java.text.SimpleDateFormat("HH:mm").format(message.timestamp),
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            } else {
+                // Para mensagens do usuário, apenas a hora
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = java.text.SimpleDateFormat("HH:mm").format(message.timestamp),
+                        fontSize = 10.sp,
                         color = Color.Gray
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
 
             // Conteúdo da Mensagem (Texto com tratamento de Deeplinks)
             Text(
                 text = message.content,
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = contentColor,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -365,7 +524,6 @@ fun RichMessageCard(message: Message) {
                     modifier = Modifier
                         .clickable {
                             Log.d("WTCApp", "Deeplink acionado: ${action.value}")
-                            // Simula Deep Link (ex: wtcapp://fatura/outubro)
                         }
                         .padding(vertical = 4.dp)
                 )
@@ -374,7 +532,6 @@ fun RichMessageCard(message: Message) {
             // Renderiza Botões de Ação
             if (message.actions.any { it.type == ActionType.BUTTON_LINK || it.type == ActionType.BUTTON_COMMAND }) {
                 Spacer(modifier = Modifier.height(12.dp))
-                // FlowRow corrigido com @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     mainAxisSpacing = 8.dp,
@@ -390,7 +547,6 @@ fun RichMessageCard(message: Message) {
                                         else -> "Ação desconhecida"
                                     }
                                     Log.d("WTCApp", logMessage)
-                                    // Em um app real: Abrir Browser ou Disparar API para o CRM/Backend
                                 },
                                 shape = MaterialTheme.shapes.small,
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -402,6 +558,59 @@ fun RichMessageCard(message: Message) {
                                 Text(action.label, fontSize = 14.sp)
                             }
                         }
+                }
+            }
+
+            // NOVO: Interação do Usuário (Curtir/Comentar)
+            if (message.type == MessageType.CAMPAIGN || message.type == MessageType.TEXT) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Divider(color = Color(0xFFE2E8F0), thickness = 0.5.dp)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Botão "Curtir" (Simulação de Interação)
+                    Row(
+                        modifier = Modifier.clickable { onLikeClicked(message.id) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (message.isLiked) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Curtir promoção",
+                            tint = if (message.isLiked) MaterialTheme.colorScheme.error else Color.Gray,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (message.likeCount > 0) message.likeCount.toString() else "Curtir",
+                            fontSize = 14.sp,
+                            color = if (message.isLiked) MaterialTheme.colorScheme.error else Color.Gray,
+                            fontWeight = if (message.isLiked) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    // Comentários (Simulado)
+                    Row(
+                        modifier = Modifier.clickable { Log.d("WTCApp", "Abrir tela de comentários para ${message.id}") },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Comment,
+                            contentDescription = "Comentários",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Comentar",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
                 }
             }
         }
@@ -424,7 +633,6 @@ fun InAppNotification(message: Message) {
             modifier = Modifier
                 .padding(12.dp)
                 .clickable {
-                    // Clicar no popup leva o usuário para a mensagem no chat
                     Log.d("WTCApp", "Popup clicado: Rolar para a mensagem ${message.id}")
                 },
             verticalAlignment = Alignment.CenterVertically
