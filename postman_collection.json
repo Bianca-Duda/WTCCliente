@@ -1,0 +1,568 @@
+{
+  "info": {
+    "name": "CRM Chat API",
+    "description": "Collection de endpoints da API do Sistema CRM com Chat Integrado",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Operador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Operador\",\n  \"email\": \"joao@crm.com\",\n  \"senha\": \"123456\",\n  \"telefone\": \"11999999999\",\n  \"tipo\": \"OPERADOR\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Maria Silva\",\n  \"email\": \"maria@email.com\",\n  \"senha\": \"123456\",\n  \"telefone\": \"11988888888\",\n  \"tipo\": \"CLIENTE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", jsonData.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operador@crm.com\",\n  \"senha\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Listar Clientes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Cliente por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Clientes por Termo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/buscar?termo=Maria",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "buscar"],
+              "query": [
+                {
+                  "key": "termo",
+                  "value": "Maria"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Tag",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/tag/VIP",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "tag", "VIP"]
+            }
+          }
+        },
+        {
+          "name": "Criar Cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"12345678901\",\n  \"status\": \"ATIVO\",\n  \"scoreCrm\": 75,\n  \"observacoes\": \"Cliente premium\",\n  \"tags\": [\"Premium\", \"VIP\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "2"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scoreCrm\": 90,\n  \"status\": \"VIP\",\n  \"tags\": [\"Premium\", \"VIP\", \"Fidelizado\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conversas",
+      "item": [
+        {
+          "name": "Listar Minhas Conversas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "conversas"]
+            }
+          }
+        },
+        {
+          "name": "Criar Conversa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Conversa com Cliente Premium\",\n  \"participantesIds\": [2, 3],\n  \"ehGrupo\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/conversas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "conversas"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mensagens",
+      "item": [
+        {
+          "name": "Enviar Mensagem",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversaId\": 1,\n  \"conteudo\": \"Olá! Como posso ajudá-lo hoje?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mensagens",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mensagens"]
+            }
+          }
+        },
+        {
+          "name": "Enviar Mensagem com Comando",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversaId\": 1,\n  \"conteudo\": \"/promo Desconto especial de 50% só hoje!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mensagens",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mensagens"]
+            }
+          }
+        },
+        {
+          "name": "Listar Mensagens da Conversa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mensagens/conversa/1?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mensagens", "conversa", "1"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Marcar como Lida",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mensagens/1/lida",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mensagens", "1", "lida"]
+            }
+          }
+        },
+        {
+          "name": "Marcar como Importante",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mensagens/1/importante",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mensagens", "1", "importante"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Anotações",
+      "item": [
+        {
+          "name": "Criar Anotação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": 1,\n  \"texto\": \"Cliente demonstrou interesse em produtos de alta qualidade. Sugerir linha premium.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/anotacoes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "anotacoes"]
+            }
+          }
+        },
+        {
+          "name": "Listar Anotações do Cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/anotacoes/cliente/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "anotacoes", "cliente", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Campanhas",
+      "item": [
+        {
+          "name": "Criar Campanha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Black Friday 2024\",\n  \"mensagem\": \"🎉 Mega promoção! Até 70% de desconto em todos os produtos!\",\n  \"tagsAlvo\": [\"Premium\", \"VIP\"],\n  \"scoreMinimo\": 50,\n  \"scoreMaximo\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campanhas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campanhas"]
+            }
+          }
+        },
+        {
+          "name": "Enviar Campanha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/campanhas/1/enviar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campanhas", "1", "enviar"]
+            }
+          }
+        },
+        {
+          "name": "Listar Minhas Campanhas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/campanhas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "campanhas"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tarefas",
+      "item": [
+        {
+          "name": "Criar Tarefa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": 1,\n  \"descricao\": \"Ligar para o cliente e oferecer upgrade para plano premium\",\n  \"dataVencimento\": \"2024-12-31T18:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tarefas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tarefas"]
+            }
+          }
+        },
+        {
+          "name": "Listar Minhas Tarefas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tarefas/minhas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tarefas", "minhas"]
+            }
+          }
+        },
+        {
+          "name": "Concluir Tarefa",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tarefas/1/concluir",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tarefas", "1", "concluir"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+

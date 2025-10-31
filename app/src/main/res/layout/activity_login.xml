@@ -38,11 +38,11 @@
         android:paddingTop="8dp">
 
         <EditText
-            android:id="@+id/inputCpfCliente"
+            android:id="@+id/inputEmailCliente"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="CPF"
-            android:inputType="number" />
+            android:hint="E-mail"
+            android:inputType="textEmailAddress" />
 
         <EditText
             android:id="@+id/inputSenhaCliente"
