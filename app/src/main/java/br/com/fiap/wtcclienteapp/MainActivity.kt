@@ -37,6 +37,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.livedata.observeAsState
 
 // Mock de classes/funções do Firebase para satisfazer o requisito de conectividade
 // Em um aplicativo real, isso seria substituído por dependências e inicializações reais.
@@ -265,9 +267,7 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary, titleContentColor = MaterialTheme.colorScheme.onPrimary),
                     actions = {
                         if (clientId != null || clientName != null) {
-                            IconButton(onClick = { showChatList = true }) {
-                                Icon(Icons.Filled.MailOutline, contentDescription = "Conversas", tint = MaterialTheme.colorScheme.onPrimary)
-                            }
+                            MensagensNaoLidasBadge { showChatList = true }
                         }
                         IconButton(onClick = { /* Ação de busca */ }) {
                             Icon(Icons.Filled.Search, contentDescription = "Buscar", tint = MaterialTheme.colorScheme.onPrimary)
@@ -500,14 +500,49 @@ fun GroupsListDialog(memberKey: String, onDismiss: () -> Unit) {
     )
 }
 
+@Composable
+fun MensagensNaoLidasBadge(onClick: () -> Unit) {
+    val mensagemViewModel: MensagemViewModel = viewModel()
+    val mensagensNaoLidas by mensagemViewModel.mensagensNaoLidas.observeAsState(0)
+    
+    LaunchedEffect(Unit) {
+        mensagemViewModel.atualizarMensagensNaoLidas()
+    }
+    
+    Box {
+        IconButton(onClick = onClick) {
+            Icon(
+                Icons.Filled.MailOutline, 
+                contentDescription = "Conversas", 
+                tint = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+        if (mensagensNaoLidas > 0) {
+            Badge(
+                modifier = Modifier.align(Alignment.TopEnd)
+            ) {
+                Text(mensagensNaoLidas.toString())
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatListDialog(memberKey: String, onDismiss: () -> Unit) {
     val context = LocalContext.current
-    val groups = remember { mutableStateListOf<Group>() }
-    LaunchedEffect(memberKey) {
-        groups.clear()
-        groups.addAll(GroupStore.groupsForMember(memberKey))
+    val conversaViewModel: ConversaViewModel = viewModel()
+    val conversas by conversaViewModel.conversas.observeAsState(emptyList())
+    val clienteId = br.com.fiap.wtcclienteapp.network.AuthManager.getUserId()
+    
+    // Buscar conversas do cliente
+    LaunchedEffect(clienteId) {
+        clienteId?.let { conversaViewModel.listarConversas() }
+    }
+    
+    // Filtrar conversas do cliente atual
+    val conversasDoCliente = conversas.filter { conversa ->
+        conversa.participantes?.any { participante -> participante.id == clienteId } == true
     }
 
     AlertDialog(
@@ -515,14 +550,23 @@ fun ChatListDialog(memberKey: String, onDismiss: () -> Unit) {
         title = { Text("Conversas") },
         text = {
             LazyColumn {
-                item {
+                items(conversasDoCliente) { conversa ->
+                    // Pegar o participante que não é o cliente atual
+                    val outroParticipante = conversa.participantes?.firstOrNull { participante -> 
+                        clienteId?.let { participante.id != it } ?: true 
+                    }
+                    val nomeParticipante = outroParticipante?.nome ?: "Atendente"
+                    val outroParticipanteId = outroParticipante?.id
+                    val conversaIdValue = conversa.id ?: 0L
+                    
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
                                 context.startActivity(Intent(context, ChatActivity::class.java).apply {
-                                    putExtra(ChatActivity.EXTRA_PEER_ID, "operator")
-                                    putExtra(ChatActivity.EXTRA_PEER_NAME, "Atendente")
+                                    putExtra(ChatActivity.EXTRA_PEER_ID, outroParticipanteId?.toString() ?: "")
+                                    putExtra(ChatActivity.EXTRA_PEER_NAME, nomeParticipante)
+                                    putExtra(ChatActivity.EXTRA_CONVERSA_ID, conversaIdValue)
                                 })
                                 onDismiss()
                             }
@@ -532,34 +576,41 @@ fun ChatListDialog(memberKey: String, onDismiss: () -> Unit) {
                         Icon(Icons.Filled.AccountCircle, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Column {
-                            Text("Chat com Atendente", fontWeight = FontWeight.Medium)
-                            Text("1:1", fontSize = 12.sp, color = Color.Gray)
+                            Text(nomeParticipante, fontWeight = FontWeight.Medium)
+                            Text(if (conversa.ehGrupo == true) "Grupo" else "1:1", fontSize = 12.sp, color = Color.Gray)
                         }
                     }
                     Divider(color = Color(0xFFE2E8F0), thickness = 0.5.dp)
                 }
-                items(groups) { g ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                context.startActivity(Intent(context, GroupChatActivity::class.java).apply {
-                                    putExtra(GroupChatActivity.EXTRA_GROUP_ID, g.id)
-                                    putExtra(GroupChatActivity.EXTRA_GROUP_NAME, g.name)
-                                })
-                                onDismiss()
+                
+                // Fallback para grupos locais antigos (se houver)
+                item {
+                    if (conversasDoCliente.isEmpty()) {
+                        val groups = GroupStore.groupsForMember(memberKey)
+                        groups.forEach { g ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        context.startActivity(Intent(context, GroupChatActivity::class.java).apply {
+                                            putExtra(GroupChatActivity.EXTRA_GROUP_ID, g.id)
+                                            putExtra(GroupChatActivity.EXTRA_GROUP_NAME, g.name)
+                                        })
+                                        onDismiss()
+                                    }
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Filled.AccountCircle, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Column {
+                                    Text(g.name, fontWeight = FontWeight.Medium)
+                                    Text("Grupo", fontSize = 12.sp, color = Color.Gray)
+                                }
                             }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Filled.AccountCircle, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Column {
-                            Text(g.name, fontWeight = FontWeight.Medium)
-                            Text("Grupo", fontSize = 12.sp, color = Color.Gray)
+                            Divider(color = Color(0xFFE2E8F0), thickness = 0.5.dp)
                         }
                     }
-                    Divider(color = Color(0xFFE2E8F0), thickness = 0.5.dp)
                 }
             }
         },
