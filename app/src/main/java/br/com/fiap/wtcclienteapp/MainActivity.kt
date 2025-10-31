@@ -97,6 +97,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FirebaseMock.initialize() // Inicialização mockada
+        
+        // Inicializar AuthManager
+        br.com.fiap.wtcclienteapp.network.AuthManager.initialize(this)
+        
         val clientId = intent.getStringExtra("client_id")
         val clientName = intent.getStringExtra("client_name")
         setContent {
@@ -294,10 +298,21 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
                 }
 
                 if (showUserInfo) {
-                    val displayName = clientName ?: "Cliente"
-                    val displayCpf = clientId ?: "Não informado"
-                    val displayEmail = "Não informado"
-                    UserInfoDialog(name = displayName, cpf = displayCpf, email = displayEmail) {
+                    // Buscar dados do usuário logado do AuthManager
+                    val authManager = br.com.fiap.wtcclienteapp.network.AuthManager
+                    val displayName = authManager.getUserName() ?: clientName ?: "Cliente"
+                    val displayCpf = authManager.getUserCpf() ?: clientId ?: "Não informado"
+                    val displayEmail = authManager.getUserEmail() ?: "Não informado"
+                    val displayTipo = authManager.getUserType() ?: "Não informado"
+                    val displayUserId = authManager.getUserId()
+                    
+                    UserInfoDialog(
+                        name = displayName,
+                        cpf = displayCpf,
+                        email = displayEmail,
+                        tipo = displayTipo,
+                        userId = displayUserId
+                    ) {
                         showUserInfo = false
                     }
                 }
@@ -718,15 +733,28 @@ fun InAppNotification(message: Message) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserInfoDialog(name: String, cpf: String, email: String, onDismiss: () -> Unit) {
+fun UserInfoDialog(
+    name: String,
+    cpf: String,
+    email: String,
+    tipo: String,
+    userId: Long?,
+    onDismiss: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Dados do Usuário") },
         text = {
-            Column {
-                Text("Nome: $name")
-                Text("CPF: $cpf")
-                Text("Email: $email")
+            Column(
+                modifier = Modifier.padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Nome: $name", fontWeight = FontWeight.Medium)
+                Text("E-mail: $email")
+                Text("Tipo: $tipo")
+                if (cpf.isNotEmpty() && cpf != "Não informado") {
+                    Text("CPF: $cpf")
+                }
             }
         },
         confirmButton = {

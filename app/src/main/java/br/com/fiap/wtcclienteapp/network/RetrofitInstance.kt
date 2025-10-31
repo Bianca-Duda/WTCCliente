@@ -44,6 +44,9 @@ object RetrofitInstance {
     }
 
     val authApi: AuthApi by lazy { apiRetrofit.create(AuthApi::class.java) }
+    val clienteApi: ClienteApi by lazy { apiRetrofit.create(ClienteApi::class.java) }
+    val conversaApi: ConversaApi by lazy { apiRetrofit.create(ConversaApi::class.java) }
+    val anotacaoApi: AnotacaoApi by lazy { apiRetrofit.create(AnotacaoApi::class.java) }
     val dummyApi: DummyJsonApi by lazy { dummyRetrofit.create(DummyJsonApi::class.java) }
 }
 

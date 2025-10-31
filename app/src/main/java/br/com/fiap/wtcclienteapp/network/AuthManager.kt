@@ -8,6 +8,7 @@ object AuthManager {
     private const val KEY_TOKEN = "auth_token"
     private const val KEY_USER_ID = "user_id"
     private const val KEY_USER_NAME = "user_name"
+    private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_USER_TYPE = "user_type"
     private const val KEY_USER_CPF = "user_cpf"
     
@@ -36,6 +37,20 @@ object AuthManager {
             userType?.let { putString(KEY_USER_TYPE, it) }
             userCpf?.let { putString(KEY_USER_CPF, it) }
             apply()
+        }
+    }
+    
+    fun saveUserEmail(email: String?) {
+        if (::prefs.isInitialized && email != null) {
+            prefs.edit().putString(KEY_USER_EMAIL, email).apply()
+        }
+    }
+    
+    fun getUserEmail(): String? {
+        return if (::prefs.isInitialized) {
+            prefs.getString(KEY_USER_EMAIL, null)
+        } else {
+            null
         }
     }
     

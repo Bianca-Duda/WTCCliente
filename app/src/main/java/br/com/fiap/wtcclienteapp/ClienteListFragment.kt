@@ -25,7 +25,8 @@ class ClienteListFragment : Fragment() {
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerClientes)
         val btnCriarGrupo = view.findViewById<Button>(R.id.btnCriarGrupo)
-        val btnCriarAviso = view.findViewById<Button>(R.id.btnCriarAviso)
+        // val btnCriarAviso = view.findViewById<Button>(R.id.btnCriarAviso) // Comentado
+        // val btnCriarCliente = view.findViewById<Button>(R.id.btnCriarCliente) // Não está no layout
         val btnMeusGrupos = view.findViewById<Button>(R.id.btnMeusGrupos)
         val btnPesquisa = view.findViewById<Button>(R.id.btnPesquisa)
 
@@ -44,31 +45,63 @@ class ClienteListFragment : Fragment() {
 
         parentFragmentManager.setFragmentResultListener(FilterDialog.REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
             val cpf = bundle.getString(FilterDialog.KEY_CPF).orEmpty()
-            val score = bundle.getString(FilterDialog.KEY_SCORE).orEmpty().toIntOrNull()
+            // Score removido do filtro
             val status = bundle.getString(FilterDialog.KEY_STATUS).orEmpty()
-            viewModel.filtrarClientes(Filtros(cpf = cpf, score = score, status = status))
+            val tag = bundle.getString(FilterDialog.KEY_TAG).orEmpty()
+            val id = bundle.getString(FilterDialog.KEY_ID).orEmpty().toLongOrNull()
+            viewModel.filtrarClientes(Filtros(cpf = cpf.takeIf { it.isNotEmpty() }, score = null, status = status.takeIf { it.isNotEmpty() }, tag = tag.takeIf { it.isNotEmpty() }, id = id))
+        }
+        
+        // Observar mensagens de erro e sucesso
+        viewModel.erro.observe(viewLifecycleOwner) { erro ->
+            erro?.let {
+                android.widget.Toast.makeText(requireContext(), it, android.widget.Toast.LENGTH_LONG).show()
+                viewModel.limparMensagens()
+            }
+        }
+        
+        viewModel.sucesso.observe(viewLifecycleOwner) { sucesso ->
+            sucesso?.let {
+                android.widget.Toast.makeText(requireContext(), it, android.widget.Toast.LENGTH_SHORT).show()
+                viewModel.limparMensagens()
+            }
         }
 
         btnCriarGrupo.setOnClickListener {
-            CreateGroupDialog().show(parentFragmentManager, "create_group")
+            // Passar lista de clientes para o diálogo
+            CreateGroupDialog.newInstance(currentClientes).show(parentFragmentManager, "create_group")
         }
+        
+        // Observar mensagens de erro e sucesso do ConversaViewModel
+        val conversaViewModel = ViewModelProvider(this)[ConversaViewModel::class.java]
+        conversaViewModel.erro.observe(viewLifecycleOwner) { erro ->
+            erro?.let {
+                android.widget.Toast.makeText(requireContext(), it, android.widget.Toast.LENGTH_LONG).show()
+                conversaViewModel.limparMensagens()
+            }
+        }
+        
+        conversaViewModel.sucesso.observe(viewLifecycleOwner) { sucesso ->
+            sucesso?.let {
+                android.widget.Toast.makeText(requireContext(), it, android.widget.Toast.LENGTH_SHORT).show()
+                conversaViewModel.limparMensagens()
+            }
+        }
+        
+        // Criar Cliente - Não está no layout atual
+        /*
+        btnCriarCliente.setOnClickListener {
+            CreateClienteDialog.newInstance().show(parentFragmentManager, "create_cliente")
+        }
+        */
 
         btnMeusGrupos.setOnClickListener {
-            val groups = GroupStore.listGroups()
-            if (groups.isEmpty()) return@setOnClickListener
-            val names = groups.map { it.name }.toTypedArray()
-            androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                .setTitle("Grupos")
-                .setItems(names) { _, which ->
-                    val g = groups[which]
-                    startActivity(android.content.Intent(requireContext(), GroupChatActivity::class.java).apply {
-                        putExtra(GroupChatActivity.EXTRA_GROUP_ID, g.id)
-                        putExtra(GroupChatActivity.EXTRA_GROUP_NAME, g.name)
-                    })
-                }
-                .show()
+            // Mostrar lista de conversas da API
+            ConversaListDialog().show(parentFragmentManager, "conversa_list")
         }
 
+        // Criar Aviso - Comentado
+        /*
         btnCriarAviso.setOnClickListener {
             val clientIds = currentClientes.map { it.id.toString() }
             val clientNames = currentClientes.map { it.nome }
@@ -78,6 +111,7 @@ class ClienteListFragment : Fragment() {
             CreateNoticeDialog.newInstance(clientIds, clientNames, groupIds, groupNames)
                 .show(parentFragmentManager, "create_notice")
         }
+        */
 
         // Carrega inicial
         viewModel.filtrarClientes(Filtros())

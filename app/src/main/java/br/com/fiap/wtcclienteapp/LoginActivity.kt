@@ -61,6 +61,7 @@ class LoginActivity : AppCompatActivity() {
                     userType = response.tipo,
                     userCpf = null // CPF não vem na resposta do login
                 )
+                AuthManager.saveUserEmail(response.email)
 
                 // Navegar para a tela apropriada baseado no tipo retornado pela API
                 val userType = response.tipo?.uppercase()

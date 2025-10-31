@@ -43,14 +43,14 @@
             android:gravity="center"
             android:paddingTop="8dp">
 
-            <Button
+            <!-- <Button
                 android:id="@+id/btnCriarAviso"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Criar Aviso"
                 android:layout_marginEnd="12dp"
                 android:backgroundTint="@color/brand_blue"
-                android:textColor="@color/white" />
+                android:textColor="@color/white" /> -->
 
             <Button
                 android:id="@+id/btnPesquisa"

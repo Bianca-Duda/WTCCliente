@@ -37,30 +37,68 @@ class ClienteAdapter(private var items: List<Cliente>) : RecyclerView.Adapter<Cl
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.title.text = item.nome
-        holder.subtitle.text = "CPF: ${item.cpf} | Score: ${item.scoreCrm} | Status: ${item.status}"
+        val tagsStr = if (item.tags.isNotEmpty()) " | Tags: ${item.tags.joinToString(", ")}" else ""
+        holder.subtitle.text = "CPF: ${item.cpf} | Score: ${item.scoreCrm} | Status: ${item.status.descricao}$tagsStr"
         holder.itemView.setOnClickListener {
             val ctx = holder.itemView.context
             val clientId = item.id.toString()
-            val note = NotesStorage.get(ctx, clientId)
-            val message = if (note.isBlank()) "Sem anotações." else "Anotação:\n$note"
-
-            AlertDialog.Builder(ctx)
-                .setTitle(item.nome)
-                .setMessage(message)
-                .setPositiveButton("Enviar mensagem") { _, _ ->
-                    ctx.startActivity(Intent(ctx, ChatActivity::class.java).apply {
-                        putExtra(ChatActivity.EXTRA_PEER_ID, clientId)
-                        putExtra(ChatActivity.EXTRA_PEER_NAME, item.nome)
-                    })
-                }
-                .setNeutralButton("Criar anotações") { _, _ ->
-                    (ctx as AppCompatActivity).let { act ->
-                        QuickNoteDialog.newInstance(clientId)
-                            .show(act.supportFragmentManager, "note")
+            
+            // Buscar anotações da API e exibir diálogo
+            val viewModel = androidx.lifecycle.ViewModelProvider(
+                (ctx as AppCompatActivity)
+            )[AnotacaoViewModel::class.java]
+            
+            // Fallback local imediato
+            val noteLocal = NotesStorage.get(ctx, clientId)
+            
+            // Função para criar e mostrar o diálogo
+            fun mostrarDialogo(noteText: String) {
+                val message = if (noteText.isBlank()) "Sem anotações." else "Anotação:\n$noteText"
+                
+                AlertDialog.Builder(ctx)
+                    .setTitle(item.nome)
+                    .setMessage(message)
+                    .setPositiveButton("Enviar mensagem") { _, _ ->
+                        ctx.startActivity(Intent(ctx, ChatActivity::class.java).apply {
+                            putExtra(ChatActivity.EXTRA_PEER_ID, clientId)
+                            putExtra(ChatActivity.EXTRA_PEER_NAME, item.nome)
+                        })
                     }
+                    .setNeutralButton("Editar Cliente") { _, _ ->
+                        (ctx as AppCompatActivity).let { act ->
+                            EditClienteDialog.newInstance(item)
+                                .show(act.supportFragmentManager, "edit_cliente")
+                        }
+                    }
+                    .setNegativeButton("Criar anotações") { _, _ ->
+                        (ctx as AppCompatActivity).let { act ->
+                            QuickNoteDialog.newInstance(clientId)
+                                .show(act.supportFragmentManager, "note")
+                        }
+                    }
+                    .show()
+            }
+            
+            // Mostrar diálogo imediatamente com anotação local (se houver)
+            if (noteLocal.isNotBlank()) {
+                mostrarDialogo(noteLocal)
+            } else {
+                mostrarDialogo("")
+            }
+            
+            // Buscar da API e atualizar se houver anotação mais recente
+            viewModel.listarAnotacoesPorCliente(item.id)
+            viewModel.anotacoes.observe((ctx as AppCompatActivity)) { anotacoes ->
+                val ultimaAnotacao = anotacoes.maxByOrNull { it.dataCriacao ?: "" }
+                val noteTextApi = ultimaAnotacao?.texto
+                
+                // Se houver anotação da API mais recente, atualizar o diálogo
+                if (!noteTextApi.isNullOrBlank()) {
+                    // Fechar diálogo anterior e mostrar novo se a API retornar algo
+                    // Por enquanto, apenas salvar localmente como cache
+                    NotesStorage.put(ctx, clientId, noteTextApi)
                 }
-                .setNegativeButton("Fechar", null)
-                .show()
+            }
         }
     }
 
