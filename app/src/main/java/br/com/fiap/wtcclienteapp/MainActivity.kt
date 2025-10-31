@@ -170,6 +170,8 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
     // State para mostrar lista de grupos
     var showGroupsList by remember { mutableStateOf(false) }
     val memberKey = remember(clientId, clientName) { clientId ?: clientName ?: "" }
+    // State para listar conversas (1:1 + grupos)
+    var showChatList by remember { mutableStateOf(false) }
 
     // Mock de escuta de mensagens em tempo real e simulação
     LaunchedEffect(Unit) {
@@ -250,8 +252,8 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary, titleContentColor = MaterialTheme.colorScheme.onPrimary),
                 actions = {
                     if (clientId != null || clientName != null) {
-                        IconButton(onClick = { showGroupsList = true }) {
-                            Icon(Icons.Filled.AccountCircle, contentDescription = "Meus Grupos", tint = MaterialTheme.colorScheme.onPrimary)
+                        IconButton(onClick = { showChatList = true }) {
+                            Icon(Icons.Filled.MailOutline, contentDescription = "Conversas", tint = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
                     IconButton(onClick = { /* Ação de busca */ }) {
@@ -262,17 +264,6 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            val context = LocalContext.current
-            FloatingActionButton(onClick = {
-                context.startActivity(Intent(context, ChatActivity::class.java).apply {
-                    putExtra(ChatActivity.EXTRA_PEER_ID, "operator")
-                    putExtra(ChatActivity.EXTRA_PEER_NAME, "Atendente")
-                })
-            }) {
-                Icon(Icons.Filled.AccountCircle, contentDescription = "Chat 1:1")
-            }
         },
         content = { paddingValues ->
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -286,6 +277,10 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
                     }
                 }
                 MessageList(initialMessages)
+
+                if (showChatList) {
+                    ChatListDialog(memberKey = memberKey, onDismiss = { showChatList = false })
+                }
 
                 // Popup de notificação in-app (push simulado)
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -466,6 +461,75 @@ fun GroupsListDialog(memberKey: String, onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) {
                 Text("Fechar")
             }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatListDialog(memberKey: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val groups = remember { mutableStateListOf<Group>() }
+    LaunchedEffect(memberKey) {
+        groups.clear()
+        groups.addAll(GroupStore.groupsForMember(memberKey))
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Conversas") },
+        text = {
+            LazyColumn {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                context.startActivity(Intent(context, ChatActivity::class.java).apply {
+                                    putExtra(ChatActivity.EXTRA_PEER_ID, "operator")
+                                    putExtra(ChatActivity.EXTRA_PEER_NAME, "Atendente")
+                                })
+                                onDismiss()
+                            }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.AccountCircle, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text("Chat com Atendente", fontWeight = FontWeight.Medium)
+                            Text("1:1", fontSize = 12.sp, color = Color.Gray)
+                        }
+                    }
+                    Divider(color = Color(0xFFE2E8F0), thickness = 0.5.dp)
+                }
+                items(groups) { g ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                context.startActivity(Intent(context, GroupChatActivity::class.java).apply {
+                                    putExtra(GroupChatActivity.EXTRA_GROUP_ID, g.id)
+                                    putExtra(GroupChatActivity.EXTRA_GROUP_NAME, g.name)
+                                })
+                                onDismiss()
+                            }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.AccountCircle, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(g.name, fontWeight = FontWeight.Medium)
+                            Text("Grupo", fontSize = 12.sp, color = Color.Gray)
+                        }
+                    }
+                    Divider(color = Color(0xFFE2E8F0), thickness = 0.5.dp)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Fechar") }
         }
     )
 }
