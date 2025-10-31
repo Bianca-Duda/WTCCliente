@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.EditText
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -25,11 +24,10 @@ class ClienteListFragment : Fragment() {
         viewModel = ViewModelProvider(this)[ClienteViewModel::class.java]
 
         val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerClientes)
-        val btnFiltrar = view.findViewById<Button>(R.id.btnFiltrar)
-        val btnLimpar = view.findViewById<Button>(R.id.btnLimpar)
         val btnCriarGrupo = view.findViewById<Button>(R.id.btnCriarGrupo)
         val btnCriarAviso = view.findViewById<Button>(R.id.btnCriarAviso)
         val btnMeusGrupos = view.findViewById<Button>(R.id.btnMeusGrupos)
+        val btnPesquisa = view.findViewById<Button>(R.id.btnPesquisa)
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         adapter = ClienteAdapter(emptyList())
@@ -40,18 +38,15 @@ class ClienteListFragment : Fragment() {
             adapter.submit(lista)
         }
 
-        btnFiltrar.setOnClickListener {
-            val tag = view.findViewById<EditText>(R.id.inputTag).text.toString()
-            val score = view.findViewById<EditText>(R.id.inputScore).text.toString().toIntOrNull()
-            val status = view.findViewById<EditText>(R.id.inputStatus).text.toString()
-            viewModel.filtrarClientes(Filtros(tag = tag, score = score, status = status))
+        btnPesquisa.setOnClickListener {
+            FilterDialog().show(parentFragmentManager, "filter_dialog")
         }
 
-        btnLimpar.setOnClickListener {
-            view.findViewById<EditText>(R.id.inputTag).setText("")
-            view.findViewById<EditText>(R.id.inputScore).setText("")
-            view.findViewById<EditText>(R.id.inputStatus).setText("")
-            viewModel.filtrarClientes(Filtros())
+        parentFragmentManager.setFragmentResultListener(FilterDialog.REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
+            val cpf = bundle.getString(FilterDialog.KEY_CPF).orEmpty()
+            val score = bundle.getString(FilterDialog.KEY_SCORE).orEmpty().toIntOrNull()
+            val status = bundle.getString(FilterDialog.KEY_STATUS).orEmpty()
+            viewModel.filtrarClientes(Filtros(cpf = cpf, score = score, status = status))
         }
 
         btnCriarGrupo.setOnClickListener {

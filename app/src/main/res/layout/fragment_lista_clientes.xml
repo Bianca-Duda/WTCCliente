@@ -5,72 +5,52 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <EditText
-        android:id="@+id/inputTag"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Tag" />
-
-    <EditText
-        android:id="@+id/inputScore"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="number"
-        android:hint="Score" />
-
-    <EditText
-        android:id="@+id/inputStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Status" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end"
+        android:orientation="vertical"
         android:paddingTop="8dp">
 
-        <Button
-            android:id="@+id/btnLimpar"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Limpar"
-            android:layout_marginEnd="12dp" />
+            android:orientation="horizontal"
+            android:gravity="center">
 
-        <Button
-            android:id="@+id/btnFiltrar"
-            android:layout_width="wrap_content"
+            <Button
+                android:id="@+id/btnMeusGrupos"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Meus Grupos"
+                android:layout_marginEnd="12dp" />
+
+            <Button
+                android:id="@+id/btnCriarGrupo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Criar Grupo" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Filtrar" />
-    </LinearLayout>
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingTop="8dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end"
-        android:paddingTop="8dp">
+            <Button
+                android:id="@+id/btnCriarAviso"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Criar Aviso"
+                android:layout_marginEnd="12dp" />
 
-        <Button
-            android:id="@+id/btnMeusGrupos"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Meus Grupos"
-            android:layout_marginEnd="12dp" />
-
-        <Button
-            android:id="@+id/btnCriarGrupo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Criar Grupo" />
-
-        <Button
-            android:id="@+id/btnCriarAviso"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Criar Aviso"
-            android:layout_marginStart="12dp" />
+            <Button
+                android:id="@+id/btnPesquisa"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pesquisa" />
+        </LinearLayout>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
