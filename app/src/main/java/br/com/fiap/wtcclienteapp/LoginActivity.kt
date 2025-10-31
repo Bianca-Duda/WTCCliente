@@ -2,7 +2,6 @@ package br.com.fiap.wtcclienteapp
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -23,63 +22,29 @@ class LoginActivity : AppCompatActivity() {
         // Inicializar AuthManager
         AuthManager.initialize(this)
 
-        val btnTabColaborador = findViewById<Button>(R.id.btnTabColaborador)
-        val btnTabCliente = findViewById<Button>(R.id.btnTabCliente)
+        val inputEmail = findViewById<EditText>(R.id.inputEmail)
+        val inputSenha = findViewById<EditText>(R.id.inputSenha)
+        val btnEntrar = findViewById<Button>(R.id.btnEntrar)
 
-        val formColaborador = findViewById<View>(R.id.formColaborador)
-        val formCliente = findViewById<View>(R.id.formCliente)
-
-        fun showColaborador() {
-            formColaborador.visibility = View.VISIBLE
-            formCliente.visibility = View.GONE
-        }
-
-        fun showCliente() {
-            formColaborador.visibility = View.GONE
-            formCliente.visibility = View.VISIBLE
-        }
-
-        btnTabColaborador.setOnClickListener { showColaborador() }
-        btnTabCliente.setOnClickListener { showCliente() }
-
-        // Default: mostrar cliente
-        showCliente()
-
-        // Ações dos botões de entrar
-        findViewById<Button>(R.id.btnEntrarColaborador).setOnClickListener {
-            val email = findViewById<EditText>(R.id.inputEmailColab).text.toString().trim()
-            val senha = findViewById<EditText>(R.id.inputSenhaColab).text.toString()
+        btnEntrar.setOnClickListener {
+            val email = inputEmail.text.toString().trim()
+            val senha = inputSenha.text.toString()
 
             if (email.isEmpty() || senha.isEmpty()) {
                 Toast.makeText(this, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            performLogin(email, senha, isOperador = true)
-        }
-
-        findViewById<Button>(R.id.btnEntrarCliente).setOnClickListener {
-            val email = findViewById<EditText>(R.id.inputEmailCliente).text.toString().trim()
-            val senha = findViewById<EditText>(R.id.inputSenhaCliente).text.toString()
-
-            if (email.isEmpty() || senha.isEmpty()) {
-                Toast.makeText(this, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            performLogin(email, senha, isOperador = false)
+            performLogin(email, senha)
         }
     }
 
-    private fun performLogin(email: String, senha: String, isOperador: Boolean) {
-        val loginButton = if (isOperador) {
-            findViewById<Button>(R.id.btnEntrarColaborador)
-        } else {
-            findViewById<Button>(R.id.btnEntrarCliente)
-        }
+    private fun performLogin(email: String, senha: String) {
+        val btnEntrar = findViewById<Button>(R.id.btnEntrar)
+        val originalButtonText = btnEntrar.text.toString()
 
-        loginButton.isEnabled = false
-        loginButton.text = "Entrando..."
+        btnEntrar.isEnabled = false
+        btnEntrar.text = "Entrando..."
 
         CoroutineScope(Dispatchers.Main).launch {
             try {
@@ -97,31 +62,35 @@ class LoginActivity : AppCompatActivity() {
                     userCpf = null // CPF não vem na resposta do login
                 )
 
-                // Navegar para a tela apropriada
-                if (isOperador) {
-                    // Verificar se o tipo de usuário é OPERADOR
-                    val userType = response.tipo?.uppercase()
-                    if (userType == "OPERADOR") {
+                // Navegar para a tela apropriada baseado no tipo retornado pela API
+                val userType = response.tipo?.uppercase()
+                
+                when (userType) {
+                    "OPERADOR" -> {
+                        // Redirecionar para OperadorActivity
                         startActivity(Intent(this@LoginActivity, OperadorActivity::class.java))
                         finish()
-                    } else {
+                    }
+                    "CLIENTE" -> {
+                        // Redirecionar para MainActivity (cliente)
+                        val clientId = response.usuarioId?.toString() ?: email
+                        val clientName = response.nome ?: email
+                        startActivity(Intent(this@LoginActivity, MainActivity::class.java).apply {
+                            putExtra("client_id", clientId)
+                            putExtra("client_name", clientName)
+                        })
+                        finish()
+                    }
+                    else -> {
+                        // Tipo desconhecido ou não informado
                         Toast.makeText(
                             this@LoginActivity,
-                            "Credenciais inválidas para operador",
+                            "Tipo de usuário não reconhecido: ${response.tipo}",
                             Toast.LENGTH_SHORT
                         ).show()
-                        loginButton.isEnabled = true
-                        loginButton.text = "Entrar como Colaborador"
+                        btnEntrar.isEnabled = true
+                        btnEntrar.text = originalButtonText
                     }
-                } else {
-                    // Para cliente, usar informações do usuário retornado pela API
-                    val clientId = response.usuarioId?.toString() ?: email
-                    val clientName = response.nome ?: email
-                    startActivity(Intent(this@LoginActivity, MainActivity::class.java).apply {
-                        putExtra("client_id", clientId)
-                        putExtra("client_name", clientName)
-                    })
-                    finish()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -130,8 +99,8 @@ class LoginActivity : AppCompatActivity() {
                     "Erro ao fazer login: ${e.message ?: "Verifique suas credenciais"}",
                     Toast.LENGTH_LONG
                 ).show()
-                loginButton.isEnabled = true
-                loginButton.text = if (isOperador) "Entrar como Colaborador" else "Entrar como Cliente"
+                btnEntrar.isEnabled = true
+                btnEntrar.text = originalButtonText
             }
         }
     }

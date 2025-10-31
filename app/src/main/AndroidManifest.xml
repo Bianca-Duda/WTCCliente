@@ -21,15 +21,21 @@
             android:theme="@style/Theme.WTCClienteApp" />
 
         <activity
-            android:name=".LoginActivity"
+            android:name=".RegisterActivity"
             android:exported="true"
-            android:label="Login"
+            android:label="Cadastro"
             android:theme="@style/Theme.WTCClienteApp">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:label="Login"
+            android:theme="@style/Theme.WTCClienteApp" />
 
         <activity
             android:name=".OperadorActivity"
