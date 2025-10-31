@@ -12,3 +12,11 @@ data class LoginResponse(
     val email: String?,
     val tipo: String?
 )
+
+data class RegisterRequest(
+    val nome: String,
+    val email: String,
+    val senha: String,
+    val telefone: String,
+    val tipo: String
+)
