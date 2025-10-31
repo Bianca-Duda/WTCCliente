@@ -11,8 +11,6 @@ class ClienteRepository {
     suspend fun buscarClientes(filtros: Filtros): List<Cliente> {
         val base = if (!filtros.status.isNullOrEmpty()) {
             api.searchUsers(filtros.status).users
-        } else if (!filtros.tag.isNullOrEmpty()) {
-            api.searchUsers(filtros.tag).users
         } else {
             api.listUsers().users
         }
@@ -30,7 +28,7 @@ class ClienteRepository {
         return mapped.filter { c ->
             (filtros.score == null || c.scoreCrm >= filtros.score) &&
             (filtros.status.isNullOrEmpty() || c.status.descricao.contains(filtros.status, true)) &&
-            (filtros.tag.isNullOrEmpty() || c.tags.any { it.contains(filtros.tag, true) })
+            (filtros.cpf.isNullOrEmpty() || c.cpf.contains(filtros.cpf, true))
         }
     }
 }
