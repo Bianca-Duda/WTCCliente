@@ -113,10 +113,23 @@ class MainActivity : ComponentActivity() {
 fun WTCAppTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = lightColorScheme(
-            primary = Color(0xFF005691), // Azul WTC
-            onPrimary = Color.White,
-            surface = Color(0xFFF0F4F8), // Fundo claro
-            onSurface = Color(0xFF1E293B)
+            primary = Color(0xFF005691),
+            onPrimary = Color(0xFFFFFFFF),
+            primaryContainer = Color(0xFF0A6FB7),
+            onPrimaryContainer = Color(0xFFFFFFFF),
+
+            secondary = Color(0xFFE73AA9),
+            onSecondary = Color(0xFFFFFFFF),
+            secondaryContainer = Color(0xFFF6B6DE),
+            onSecondaryContainer = Color(0xFF4A0D31),
+
+            background = Color(0xFFFFFFFF),
+            onBackground = Color(0xFF1E293B),
+            surface = Color(0xFFFFFFFF),
+            onSurface = Color(0xFF1E293B),
+            surfaceVariant = Color(0xFFE2E8F0),
+            onSurfaceVariant = Color(0xFF475569),
+            outline = Color(0xFF94A3B8)
         ),
         shapes = Shapes(
             extraSmall = RoundedCornerShape(4.dp),
@@ -151,16 +164,6 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
                     Action("Ativar Agora", ActionType.BUTTON_COMMAND, "/ativar_premium")
                 ),
                 isRead = false // Mensagem não lida
-            ),
-            Message(
-                id = "3",
-                sender = "CRM WTC",
-                content = "Seu boleto de Outubro já está disponível. Acesse o link para pagamento imediato: [Deeplink Boleto]",
-                type = MessageType.TEXT,
-                actions = listOf(
-                    Action("[Deeplink Boleto]", ActionType.DEEPLINK_TEXT, "wtcapp://fatura/outubro")
-                ),
-                isRead = false
             )
         )
     }
@@ -172,6 +175,8 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
     val memberKey = remember(clientId, clientName) { clientId ?: clientName ?: "" }
     // State para listar conversas (1:1 + grupos)
     var showChatList by remember { mutableStateOf(false) }
+    // State para dados do usuário
+    var showUserInfo by remember { mutableStateOf(false) }
 
     // Mock de escuta de mensagens em tempo real e simulação
     LaunchedEffect(Unit) {
@@ -219,6 +224,9 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
                     sender = "Aviso",
                     content = composed,
                     type = MessageType.SYSTEM,
+                    actions = listOf(
+                        Action(label = "Enviar mensagem", type = ActionType.BUTTON_COMMAND, value = "/chat_atendente")
+                    ),
                     isRead = false
                 )
                 initialMessages.add(0, msg)
@@ -247,23 +255,26 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("WTC Mensagens", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary, titleContentColor = MaterialTheme.colorScheme.onPrimary),
-                actions = {
-                    if (clientId != null || clientName != null) {
-                        IconButton(onClick = { showChatList = true }) {
-                            Icon(Icons.Filled.MailOutline, contentDescription = "Conversas", tint = MaterialTheme.colorScheme.onPrimary)
+            Column {
+                TopAppBar(
+                    title = { Text("WTC Mensagens", fontWeight = FontWeight.Bold) },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary, titleContentColor = MaterialTheme.colorScheme.onPrimary),
+                    actions = {
+                        if (clientId != null || clientName != null) {
+                            IconButton(onClick = { showChatList = true }) {
+                                Icon(Icons.Filled.MailOutline, contentDescription = "Conversas", tint = MaterialTheme.colorScheme.onPrimary)
+                            }
+                        }
+                        IconButton(onClick = { /* Ação de busca */ }) {
+                            Icon(Icons.Filled.Search, contentDescription = "Buscar", tint = MaterialTheme.colorScheme.onPrimary)
+                        }
+                        IconButton(onClick = { showUserInfo = true }) {
+                            Icon(Icons.Filled.Person, contentDescription = "Perfil", tint = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
-                    IconButton(onClick = { /* Ação de busca */ }) {
-                        Icon(Icons.Filled.Search, contentDescription = "Buscar", tint = MaterialTheme.colorScheme.onPrimary)
-                    }
-                    IconButton(onClick = { /* Ação de perfil */ }) {
-                        Icon(Icons.Filled.Person, contentDescription = "Perfil", tint = MaterialTheme.colorScheme.onPrimary)
-                    }
-                }
-            )
+                )
+                Divider(color = MaterialTheme.colorScheme.secondary, thickness = 3.dp)
+            }
         },
         content = { paddingValues ->
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -280,6 +291,15 @@ fun WTCClientApp(clientId: String? = null, clientName: String? = null) {
 
                 if (showChatList) {
                     ChatListDialog(memberKey = memberKey, onDismiss = { showChatList = false })
+                }
+
+                if (showUserInfo) {
+                    val displayName = clientName ?: "Cliente"
+                    val displayCpf = clientId ?: "Não informado"
+                    val displayEmail = "Não informado"
+                    UserInfoDialog(name = displayName, cpf = displayCpf, email = displayEmail) {
+                        showUserInfo = false
+                    }
                 }
 
                 // Popup de notificação in-app (push simulado)
@@ -615,13 +635,24 @@ fun RichMessageCard(message: Message) {
                         .forEach { action ->
                             Button(
                                 onClick = {
-                                    val logMessage = when (action.type) {
-                                        ActionType.BUTTON_LINK -> "Link/Deeplink: ${action.value}"
-                                        ActionType.BUTTON_COMMAND -> "Comando CRM disparado: ${action.value}"
-                                        else -> "Ação desconhecida"
+                                    when (action.type) {
+                                        ActionType.BUTTON_LINK -> {
+                                            Log.d("WTCApp", "Link/Deeplink: ${action.value}")
+                                            // Poderia abrir um navegador/deeplink aqui
+                                        }
+                                        ActionType.BUTTON_COMMAND -> {
+                                            if (action.value == "/chat_atendente") {
+                                                val intent = Intent(context, ChatActivity::class.java).apply {
+                                                    putExtra(ChatActivity.EXTRA_PEER_ID, "operator")
+                                                    putExtra(ChatActivity.EXTRA_PEER_NAME, "Atendente")
+                                                }
+                                                context.startActivity(intent)
+                                            } else {
+                                                Log.d("WTCApp", "Comando CRM disparado: ${action.value}")
+                                            }
+                                        }
+                                        else -> Log.d("WTCApp", "Ação desconhecida")
                                     }
-                                    Log.d("WTCApp", logMessage)
-                                    // Em um app real: Abrir Browser ou Disparar API para o CRM/Backend
                                 },
                                 shape = MaterialTheme.shapes.small,
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -683,6 +714,25 @@ fun InAppNotification(message: Message) {
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UserInfoDialog(name: String, cpf: String, email: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Dados do Usuário") },
+        text = {
+            Column {
+                Text("Nome: $name")
+                Text("CPF: $cpf")
+                Text("Email: $email")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Fechar") }
+        }
+    )
 }
 
 // --- Preview ---

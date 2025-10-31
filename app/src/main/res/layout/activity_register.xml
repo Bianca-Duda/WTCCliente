@@ -3,8 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:gravity="center_vertical">
+    android:padding="24dp"
+    android:gravity="center_vertical"
+    android:background="@color/white">
 
     <TextView
         android:layout_width="wrap_content"
@@ -12,8 +13,16 @@
         android:text="Cadastro"
         android:textSize="24sp"
         android:textStyle="bold"
+        android:textColor="@color/brand_blue"
+        android:layout_gravity="center_horizontal" />
+
+    <View
+        android:layout_width="64dp"
+        android:layout_height="3dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="24dp"
         android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="24dp" />
+        android:background="@color/accent_pink" />
 
     <EditText
         android:id="@+id/inputNome"
@@ -21,7 +30,10 @@
         android:layout_height="wrap_content"
         android:hint="Nome completo"
         android:inputType="textPersonName"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="@color/light_gray"
+        android:textColor="@color/text_dark"
+        android:textColorHint="@color/text_hint" />
 
     <EditText
         android:id="@+id/inputEmail"
@@ -29,7 +41,10 @@
         android:layout_height="wrap_content"
         android:hint="E-mail"
         android:inputType="textEmailAddress"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="@color/light_gray"
+        android:textColor="@color/text_dark"
+        android:textColorHint="@color/text_hint" />
 
     <EditText
         android:id="@+id/inputTelefone"
@@ -37,7 +52,10 @@
         android:layout_height="wrap_content"
         android:hint="Telefone"
         android:inputType="phone"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="@color/light_gray"
+        android:textColor="@color/text_dark"
+        android:textColorHint="@color/text_hint" />
 
     <EditText
         android:id="@+id/inputSenha"
@@ -45,7 +63,10 @@
         android:layout_height="wrap_content"
         android:hint="Senha"
         android:inputType="textPassword"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="@color/light_gray"
+        android:textColor="@color/text_dark"
+        android:textColorHint="@color/text_hint" />
 
     <EditText
         android:id="@+id/inputConfirmarSenha"
@@ -53,19 +74,25 @@
         android:layout_height="wrap_content"
         android:hint="Confirmar Senha"
         android:inputType="textPassword"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="20dp"
+        android:backgroundTint="@color/light_gray"
+        android:textColor="@color/text_dark"
+        android:textColorHint="@color/text_hint" />
 
     <Button
         android:id="@+id/btnCadastrar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Cadastrar"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="@color/brand_blue"
+        android:textColor="@color/white" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Já tem uma conta?"
+        android:textColor="@color/text_hint"
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="8dp" />
 
@@ -73,6 +100,8 @@
         android:id="@+id/btnIrParaLogin"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Fazer Login" />
+        android:text="Fazer Login"
+        android:backgroundTint="@color/brand_blue"
+        android:textColor="@color/white" />
 
 </LinearLayout>

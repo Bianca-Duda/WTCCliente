@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import br.com.fiap.wtcclienteapp.model.Cliente
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 
 class ClienteAdapter(private var items: List<Cliente>) : RecyclerView.Adapter<ClienteAdapter.ViewHolder>() {
 
@@ -26,7 +27,11 @@ class ClienteAdapter(private var items: List<Cliente>) : RecyclerView.Adapter<Cl
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val root = LayoutInflater.from(parent.context).inflate(android.R.layout.simple_list_item_2, parent, false)
-        return ViewHolder(root)
+        return ViewHolder(root).also { vh ->
+            val ctx = parent.context
+            vh.title.setTextColor(ContextCompat.getColor(ctx, R.color.text_dark))
+            vh.subtitle.setTextColor(ContextCompat.getColor(ctx, R.color.text_hint))
+        }
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {

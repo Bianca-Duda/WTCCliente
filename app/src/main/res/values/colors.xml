@@ -7,4 +7,10 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Brand accents -->
+    <color name="brand_blue">#005691</color>
+    <color name="accent_pink">#E73AA9</color>
+    <color name="light_gray">#E2E8F0</color>
+    <color name="text_dark">#1E293B</color>
+    <color name="text_hint">#64748B</color>
 </resources>
